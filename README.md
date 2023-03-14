@@ -1,6 +1,16 @@
 # Alignment Negotiation
 
-## Testing on your local
+An alignment tool for mentors and apprentices. Check out [Tome.gg](https://tome.gg)!
+
+## Build
+
+```bash
+anchor build
+```
+
+## Test
+
+### Testing on local
 
 1. Define two key pairs for the apprentice and mentor. You can use [Phantom](https://phantom.app/) to generate new wallets.
 
@@ -32,3 +42,15 @@ You can also choose to run the typescript tests only:
 ```bash
 anchor test --skip-build --skip-deploy --skip-local-validator 
 ```
+
+## License
+
+Apache License 2.0. See [LICENSE.md](LICENSE.md).
+
+## Roadmap
+
+### Tasks ahead
+
+1. Write a GitHub action to run the tests on the dev network.
+2. Integrate this with the frontend app.
+
