@@ -13,6 +13,10 @@ This tool enables mentors and apprentices:
 
 Well, [there are certain challenges](docs/context.md) we are tackling at [Tome.gg](https://tome.gg), and we're in the business of revolutionizing education by pursuing [accessible, sustainable, and personalized education](https://github.com/tome-gg/whitepaper/blob/main/main.pdf) for all!
 
+*Does this have a frontend web application?*
+
+[Yes](https://github.com/tome-gg/alignment), it does.
+
 ## Build
 
 ```bash
