@@ -1,6 +1,20 @@
-# Alignment Negotiation
+# Tome.gg Negotiation Protocols - Alignment Negotiation Smart Contract
 
-An alignment tool for mentors and apprentices. Check out [Tome.gg](https://tome.gg)!
+An alignment negotiation tool (designed as a smart contract) for software engineering mentors and apprentices. 
+
+# Context
+
+There are three (3) major hurdles in accomplishing the revolutionary education that Tome.gg is pursuing:
+
+1. Accessibility to education - financial cost, time searching/skimming/reading/getting lost, etc.
+
+2. Contextualization - Languages and technologies evolve, and it takes time to transfer learning from one context to another (e.g. age groups: 40y/o teaching 25 y/os). In many parts of the world, personalizing education is expensive, if not unavailable.
+
+3. Negotiation - Establishing and negotiating a mentoring engagement is a pain point for both mentors and apprentices.
+
+With the above definition, this project is building around the third challenge of alignment negotiation between mentors and apprentices.
+
+Read more at [Tome.gg](https://tome.gg)!
 
 ## Build
 
