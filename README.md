@@ -1,6 +1,6 @@
 # Tome.gg - Alignment Negotiation Smart Contract
 
-This is `Alignment Negotiation`, which is a smart contract designed for software engineering mentors and apprentices to negotiate and align the parameters of their mentoring engagement.
+This is **Alignment Negotiation**, a smart contract designed for software engineering mentors and apprentices to negotiate and align the parameters of their mentoring engagement.
 
 This tool enables mentors and apprentices:
 
@@ -9,7 +9,9 @@ This tool enables mentors and apprentices:
 - to have a signed contract between both parties on their agreement
 - to have a third-party smart contract protocol (i.e. Tome Negotiation Protocols) that fulfill/perform the consequences of the signed contract
 
-Read about a little more [context](docs/context.md), or read more at [Tome.gg](https://tome.gg)!
+*Why build this in the first place?*
+
+Well, [there are certain challenges](docs/context.md) we are tackling at [Tome.gg](https://tome.gg), and we're in the business of revolutionizing education by pursuing [accessible, sustainable, and personalized education](https://github.com/tome-gg/whitepaper/blob/main/main.pdf) for all!
 
 ## Build
 
