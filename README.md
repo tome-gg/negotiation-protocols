@@ -43,9 +43,6 @@ You can also choose to run the typescript tests only:
 anchor test --skip-build --skip-deploy --skip-local-validator 
 ```
 
-## License
-
-Apache License 2.0. See [LICENSE.md](LICENSE.md).
 
 ## Roadmap
 
@@ -54,3 +51,11 @@ Apache License 2.0. See [LICENSE.md](LICENSE.md).
 1. Write a GitHub action to run the tests on the dev network.
 2. Integrate this with the frontend app.
 
+## Contributing
+
+I haven't set up contributing guidelines yet, but feel free to connect with me on Twitter @darrensapalo or [join my community on Discord](http://bit.ly/3yCdUiE).
+
+
+## License
+
+Apache License 2.0. See [LICENSE.md](LICENSE.md).
