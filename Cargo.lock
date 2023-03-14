@@ -23,6 +23,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alignment-negotiation"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "num-derive",
+ "num-traits",
+]
+
+[[package]]
 name = "anchor-attribute-access-control"
 version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1423,15 +1432,6 @@ dependencies = [
  "quote",
  "rustversion",
  "syn",
-]
-
-[[package]]
-name = "src-alignment-negotiation"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "num-derive",
- "num-traits",
 ]
 
 [[package]]

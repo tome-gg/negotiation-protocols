@@ -1,13 +1,14 @@
 use anchor_lang::prelude::*;
 
-declare_id!("5v2iHnzVvmqoYXva1CaDLToUNdwjo1ZHuyMicfokaXBn");
+// declare_id!("5v2iHnzVvmqoYXva1CaDLToUNdwjo1ZHuyMicfokaXBn");
+declare_id!("A52ugaNtTYT1hKC1wDP47GHtt4bE8ZxHJpAWusthCdMJ");
 
 #[program]
-pub mod src_alignment_negotiation {
+pub mod alignment_negotiation {
     use super::*;
 
     pub fn setup_negotation(ctx: Context<SetupNegotiation>, mentor: Pubkey) -> Result<()> {
-        print!(
+        msg!(
             "🤝 Setting up a negotiation initiated by apprentice `{}` to mentor `{}`",
             ctx.accounts.apprentice.key(),
             mentor.key()
@@ -18,7 +19,7 @@ pub mod src_alignment_negotiation {
     }
 
     pub fn propose(ctx: Context<Negotiate>, proposal: Proposal) -> Result<()> {
-        print!(
+        msg!(
             "📝 Sending proposal initiated by `{}`",
             ctx.accounts.player.key()
         );
@@ -59,7 +60,7 @@ pub struct AlignmentNegotiation {
     term_state: NegotiationState,       // 32 + 1
     protocol_state: NegotiationState,   // 32 + 1
     parameters_state: NegotiationState, // 32 + 1
-    stake_state: NegotiationState,      // 32 + 1
+    stakes_state: NegotiationState,     // 32 + 1
     is_complete: bool,                  // 1
 }
 
@@ -86,8 +87,6 @@ pub enum NegotiationEvent {
     Decline,
 }
 
-pub type AlignmentResult<T> = std::result::Result<T, AlignmentError>;
-
 impl NegotiationState {
     fn display(self) -> String {
         match self {
@@ -99,59 +98,62 @@ impl NegotiationState {
         }
     }
 
-    // Applies a change on a Pubkey.
+    // Determines whether the requested event is permitted. If so, returns the
+    // destination state of applying that event.
+    //
+    // Returns None if the event is not permitted; or should become no-operation.
     fn update<T: Eq>(
         &self,
         initiator: Pubkey,
         event: NegotiationEvent,
         prev: T,
         new: T,
-    ) -> AlignmentResult<NegotiationState> {
+    ) -> Option<NegotiationState> {
         match event {
             NegotiationEvent::Discuss => {
                 if prev == new {
-                    return Err(AlignmentError::ProposalHasNoChange);
+                    return None;
                 }
 
-                Ok(NegotiationState::Discussion)
+                return Some(NegotiationState::Discussion);
             }
             NegotiationEvent::Propose => {
                 if prev == new {
-                    return Err(AlignmentError::ProposalHasNoChange);
+                    return None;
                 }
 
                 if self.is_proposed() || self.is_reviewed() {
-                    return Err(AlignmentError::ProposalAlreadySent);
+                    return None;
                 }
 
-                Ok(NegotiationState::Proposed {
+                return Some(NegotiationState::Proposed {
                     proposer: (initiator),
-                })
+                });
             }
             NegotiationEvent::Review => {
                 if self.is_reviewed() {
-                    return Err(AlignmentError::ProposalAlreadyReceived);
+                    return None;
                 }
 
-                Ok(NegotiationState::Reviewed {
+                return Some(NegotiationState::Reviewed {
                     proposee: (initiator),
-                })
+                });
             }
             NegotiationEvent::Accept => {
                 if self.is_accepted() {
-                    return Err(AlignmentError::ProposalAlreadyAccepted);
+                    return None;
                 }
 
-                Ok(NegotiationState::Accepted {
+                return Some(NegotiationState::Accepted {
                     proposee: (initiator),
-                })
+                });
             }
             NegotiationEvent::Decline => {
                 if self.is_accepted() {
-                    return Err(AlignmentError::ProposalAlreadyAccepted);
+                    return None;
                 }
 
-                Ok(NegotiationState::Discussion)
+                return Some(NegotiationState::Discussion);
             }
         }
     }
@@ -196,17 +198,18 @@ impl NegotiationState {
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct Proposal {
-    term: Pubkey,         // 32
-    parameters: [u8; 32], // 32
-    protocol: Pubkey,     // 32
-    stakes: u64,          // 8
-    events: u16,          // 2
-    alt_term: Pubkey,     //  32
-    alt_protocol: Pubkey, // 32
+    term: Option<Pubkey>,         // 32 + 4
+    parameters: Option<[u8; 32]>, // 32 + 4
+    protocol: Option<Pubkey>,     // 32 + 4
+    stakes: Option<u64>,          // 8 + 4
+    events: u16,                  // 2
+    alt_term: Option<Pubkey>,     //  32 + 4
+    alt_protocol: Option<Pubkey>, // 32 + 4
 }
 
 impl Proposal {
-    pub const MAXIMUM_SIZE: usize = 32 + 32 + 32 + 8 + 2 + 32 + 32;
+    pub const MAXIMUM_SIZE: usize =
+        (32 + 4) + (32 + 4) + (32 + 4) + (8 + 4) + (2) + (32 + 4) + (32 + 4);
 
     /* 
     Events
@@ -232,19 +235,19 @@ impl Proposal {
         const REVIEW_TERM: u16 = 0b0000000010000000;
         const ACCEPT_TERM: u16 = 0b0000000000001000;
 
-        if events & DISCUSS_TERM == DISCUSS_TERM {
+        if (events & DISCUSS_TERM) == DISCUSS_TERM {
             return NegotiationEvent::Discuss;
         }
 
-        if events & PROPOSE_TERM == PROPOSE_TERM {
+        if (events & PROPOSE_TERM) == PROPOSE_TERM {
             return NegotiationEvent::Propose;
         }
 
-        if events & REVIEW_TERM == REVIEW_TERM {
+        if (events & REVIEW_TERM) == REVIEW_TERM {
             return NegotiationEvent::Review;
         }
 
-        if events & ACCEPT_TERM == ACCEPT_TERM {
+        if (events & ACCEPT_TERM) == ACCEPT_TERM {
             return NegotiationEvent::Accept;
         }
         NegotiationEvent::Discuss
@@ -258,19 +261,19 @@ impl Proposal {
         const REVIEW_PROTOCOL: u16 = 0b0000000001000000;
         const ACCEPT_PROTOCOL: u16 = 0b0000000000000100;
 
-        if events & DISCUSS_PROTOCOL == DISCUSS_PROTOCOL {
+        if (events & DISCUSS_PROTOCOL) == DISCUSS_PROTOCOL {
             return NegotiationEvent::Discuss;
         }
 
-        if events & PROPOSE_PROTOCOL == PROPOSE_PROTOCOL {
+        if (events & PROPOSE_PROTOCOL) == PROPOSE_PROTOCOL {
             return NegotiationEvent::Propose;
         }
 
-        if events & REVIEW_PROTOCOL == REVIEW_PROTOCOL {
+        if (events & REVIEW_PROTOCOL) == REVIEW_PROTOCOL {
             return NegotiationEvent::Review;
         }
 
-        if events & ACCEPT_PROTOCOL == ACCEPT_PROTOCOL {
+        if (events & ACCEPT_PROTOCOL) == ACCEPT_PROTOCOL {
             return NegotiationEvent::Accept;
         }
         NegotiationEvent::Discuss
@@ -284,25 +287,25 @@ impl Proposal {
         const REVIEW_PARAMETERS: u16 = 0b0000000000100000;
         const ACCEPT_PARAMETERS: u16 = 0b0000000000000010;
 
-        if events & DISCUSS_PARAMETERS == DISCUSS_PARAMETERS {
+        if (events & DISCUSS_PARAMETERS) == DISCUSS_PARAMETERS {
             return NegotiationEvent::Discuss;
         }
 
-        if events & PROPOSE_PARAMETERS == PROPOSE_PARAMETERS {
+        if (events & PROPOSE_PARAMETERS) == PROPOSE_PARAMETERS {
             return NegotiationEvent::Propose;
         }
 
-        if events & REVIEW_PARAMETERS == REVIEW_PARAMETERS {
+        if (events & REVIEW_PARAMETERS) == REVIEW_PARAMETERS {
             return NegotiationEvent::Review;
         }
 
-        if events & ACCEPT_PARAMETERS == ACCEPT_PARAMETERS {
+        if (events & ACCEPT_PARAMETERS) == ACCEPT_PARAMETERS {
             return NegotiationEvent::Accept;
         }
         NegotiationEvent::Discuss
     }
 
-    pub fn get_stake_event(&mut self) -> NegotiationEvent {
+    pub fn get_stakes_event(&mut self) -> NegotiationEvent {
         let events = self.events;
 
         const DISCUSS_STAKE: u16 = 0b0001000000000000;
@@ -310,19 +313,19 @@ impl Proposal {
         const REVIEW_STAKE: u16 = 0b0000000000010000;
         const ACCEPT_STAKE: u16 = 0b0000000000000001;
 
-        if events & DISCUSS_STAKE == DISCUSS_STAKE {
+        if (events & DISCUSS_STAKE) == DISCUSS_STAKE {
             return NegotiationEvent::Discuss;
         }
 
-        if events & PROPOSE_STAKE == PROPOSE_STAKE {
+        if (events & PROPOSE_STAKE) == PROPOSE_STAKE {
             return NegotiationEvent::Propose;
         }
 
-        if events & REVIEW_STAKE == REVIEW_STAKE {
+        if (events & REVIEW_STAKE) == REVIEW_STAKE {
             return NegotiationEvent::Review;
         }
 
-        if events & ACCEPT_STAKE == ACCEPT_STAKE {
+        if (events & ACCEPT_STAKE) == ACCEPT_STAKE {
             return NegotiationEvent::Accept;
         }
         NegotiationEvent::Discuss
@@ -382,7 +385,7 @@ impl AlignmentNegotiation {
         self.term_state.is_negotiating()
             || self.protocol_state.is_negotiating()
             || self.parameters_state.is_negotiating()
-            || self.stake_state.is_negotiating()
+            || self.stakes_state.is_negotiating()
     }
 
     pub fn current_player_index(&self) -> usize {
@@ -394,13 +397,11 @@ impl AlignmentNegotiation {
     }
 
     pub fn negotiate(&mut self, initiator: Pubkey, proposal: &mut Proposal) -> Result<()> {
-        print!("🤔 Checking if negotiation is over...");
+        msg!("🤔 Checking if negotiation is over...");
         require!(
             self.is_negotiating(),
             AlignmentError::NegotiationAlreadyOver
         );
-
-        print!("✅ Negotiation still underway.");
 
         /*
          * Applies the proposal to the current negotiation.
@@ -411,85 +412,96 @@ impl AlignmentNegotiation {
          *
          * Returns the four states of the negotiation (term, protocol, parameters, stakes).
          */
-        let term_result = self.term_state.update(
-            initiator,
-            proposal.get_term_event(),
-            self.term,
-            proposal.term,
-        );
-        let new_term_state = match term_result {
-            Ok(new_state) => new_state,
-            Err(reason) => panic!("{}", reason),
+
+        let mut new_term_state = self.term_state;
+        let mut new_protocol_state = self.protocol_state;
+        let mut new_parameters_state = self.parameters_state;
+        let mut new_stakes_state = self.stakes_state;
+
+        if proposal.term.is_some() {
+            let result = self.term_state.update(
+                initiator,
+                proposal.get_term_event(),
+                self.term,
+                proposal.term.unwrap(),
+            );
+            if result.is_some() {
+                new_term_state = result.unwrap()
+            }
+        }
+
+        if proposal.protocol.is_some() {
+            let result = self.protocol_state.update(
+                initiator,
+                proposal.get_protocol_event(),
+                self.protocol,
+                proposal.protocol.unwrap(),
+            );
+            if result.is_some() {
+                new_protocol_state = result.unwrap()
+            }
+        }
+
+        if proposal.parameters.is_some() {
+            let result = self.parameters_state.update(
+                initiator,
+                proposal.get_parameters_event(),
+                self.parameters,
+                proposal.parameters.unwrap(),
+            );
+            if result.is_some() {
+                new_parameters_state = result.unwrap()
+            }
+        }
+
+        if proposal.stakes.is_some() {
+            let result = self.stakes_state.update(
+                initiator,
+                proposal.get_stakes_event(),
+                self.stakes,
+                proposal.stakes.unwrap(),
+            );
+            if result.is_some() {
+                new_stakes_state = result.unwrap()
+            }
+        }
+
+        msg!("Negotiation stake 🔜 {}", new_stakes_state.display());
+
+        msg!("📝 Updating negotiation values...");
+
+        // Update negotiation value only if the proposal value was set.
+        if proposal.term.is_some() {
+            self.term = proposal.term.unwrap()
+        };
+        if proposal.protocol.is_some() {
+            self.protocol = proposal.protocol.unwrap()
+        };
+        if proposal.parameters.is_some() {
+            self.parameters = proposal.parameters.unwrap()
+        };
+        if proposal.stakes.is_some() {
+            self.stakes = proposal.stakes.unwrap()
         };
 
-        print!("Negotiation term 🔜 {}", new_term_state.display());
-
-        let protocol_result = self.protocol_state.update(
-            initiator,
-            proposal.get_protocol_event(),
-            self.protocol,
-            proposal.protocol,
-        );
-        let new_protocol_state = match protocol_result {
-            Ok(new_state) => new_state,
-            Err(reason) => panic!("{}", reason),
-        };
-
-        print!("Negotiation protocol 🔜 {}", new_protocol_state.display());
-
-        let parameters_result = self.parameters_state.update(
-            initiator,
-            proposal.get_parameters_event(),
-            self.parameters,
-            proposal.parameters,
-        );
-        let new_parameters_state = match parameters_result {
-            Ok(new_state) => new_state,
-            Err(reason) => panic!("{}", reason),
-        };
-
-        print!(
-            "Negotiation parameters 🔜 {}",
-            new_parameters_state.display()
-        );
-
-        let stake_result = self.stake_state.update(
-            initiator,
-            proposal.get_stake_event(),
-            self.stakes,
-            proposal.stakes,
-        );
-        let new_stake_state = match stake_result {
-            Ok(new_state) => new_state,
-            Err(reason) => panic!("{}", reason),
-        };
-
-        print!("Negotiation stake 🔜 {}", new_stake_state.display());
-
-        print!("📝 Updating negotiation values...");
-
-        // Update negotiation
-        self.term = proposal.term;
-        self.protocol = proposal.protocol;
-        self.parameters = proposal.parameters;
-        self.stakes = proposal.stakes;
-
-        print!("📝 Updating negotiation states...");
+        msg!("📝 Updating negotiation states...");
 
         // Update negotiation states
         self.term_state = new_term_state;
         self.protocol_state = new_protocol_state;
         self.parameters_state = new_parameters_state;
-        self.stake_state = new_stake_state;
+        self.stakes_state = new_stakes_state;
 
-        print!("🤔 Checking if negotiation is finished...");
+        self.turn += 1;
+
+        msg!("🤔 Checking if negotiation is finished...");
+
         self.update_state();
 
         if self.is_complete == false {
-            print!("⏳️ Negotiation not yet finished.");
-            self.turn += 1;
+            msg!("⏳️ Negotiation not yet finished.");
         } else {
-            print!("⌛️ Negotiation complete.");
+            msg!("⌛️ Negotiation complete.");
         }
 
         Ok(())

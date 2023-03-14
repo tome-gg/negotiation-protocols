@@ -1,12 +1,13 @@
 [package]
-name = "src-alignment-negotiation"
+name = "alignment-negotiation"
 version = "0.1.0"
-description = "Created with Anchor"
+description = "An alignment negotiation tool for mentors and apprentices"
 edition = "2021"
+author = "Tome.gg"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "src_alignment_negotiation"
+name = "alignment_negotiation"
 
 [features]
 no-entrypoint = []
